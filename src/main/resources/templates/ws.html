@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.springframework.org/schema/mvc">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script th:src="@{sockjs.min.js}"></script>
+    <script th:src="@{jquery-3.1.1.js}"></script>
+    <script th:src="@{stomp.js}"></script>
+</head>
+<body onload="disconnect()">
+    <div>
+        <button id="connect" onclick="connect();" >连接</button>
+        <button id="disconnect"  disabled="disabled" onclick="disconnect();">挂断 </button>
+    </div>
+
+    <div>
+        <label>输入名字</label>
+        <input type="text" id="name"/>
+        <button id="sendName" onclick="sendName()" >发送</button>
+        <p id="response"></p>
+    </div>
+</body>
+<script type="text/javascript">
+    var stormClient = null;
+
+    function setConnected(connected){
+//        $("#connect").disabled(connected);
+//        $("#disconnect").disabled(!connected);
+        $("#response").html("");
+    }
+
+    function connect() {
+        var socket = new SockJS("/endpointSang");
+        stormClient = Stomp.over(socket);
+        stormClient.connect({},function(frame){
+            setConnected(true);
+            console.log("Connected : "+frame);
+            stormClient.subscribe("/topic/getResponse",function (response){
+                $("#response").html(JSON.parse(response.body).responseMessage);
+            });
+        });
+    }
+
+    function disconnect(){
+        if(stormClient != null){
+            stormClient.disconnect();
+        }
+        setConnected(false);
+        console.log("DisConnected")
+    }
+
+    function sendName(){
+        var name = $("#name").val();
+        console.log("name = "+name);
+        stormClient.send("/welcome",{},JSON.stringify({"name":name}));
+    }
+</script>
+</html>
